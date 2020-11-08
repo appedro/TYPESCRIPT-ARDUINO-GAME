@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joystick game</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
+    integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30=" crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function () {
+
+        const socket = io.connect("http://localhost:3000/")
+
+
+        const speed = 8
+
+
+        const state = {
+            shooting: false
+        }
+        const target = {
+            Jobj: $("#target"),
+            X: 0
+        }
+        const dir = {
+            sounds: "sounds/",
+            images: "images/"
+        }
+        const animationList = {
+            shoot: () => {
+
+                state.shooting = true
+
+                $(".player").children("img").attr("src", `${dir.images}player/shoot.gif`)
+
+                setTimeout(() => {
+                    state.shooting = false
+                    $(".player").children("img").attr("src", `${dir.images}player/1.gif`)
+                }, 2000)
+            }
+        }
+
+        var overlap = {
+            collide: function (el1, el2) {
+                var rect1 = el1.getBoundingClientRect();
+                var rect2 = el2.getBoundingClientRect();
+
+                return !(
+                    rect1.top > rect2.bottom ||
+                    rect1.right < rect2.left ||
+                    rect1.bottom < rect2.top ||
+                    rect1.left > rect2.right
+                );
+            },
+
+            inside: function (el1, el2) {
+                var rect1 = el1.getBoundingClientRect();
+                var rect2 = el2.getBoundingClientRect();
+
+                return (
+                    ((rect2.top <= rect1.top) && (rect1.top <= rect2.bottom)) &&
+                    ((rect2.top <= rect1.bottom) && (rect1.bottom <= rect2.bottom)) &&
+                    ((rect2.left <= rect1.left) && (rect1.left <= rect2.right)) &&
+                    ((rect2.left <= rect1.right) && (rect1.right <= rect2.right))
+                );
+            }
+        };
+        const audioList = {
+            shoot: `${dir.sounds}shoot.mp3`,
+            dead: `${dir.sounds}pain.mp3`,
+            reload: `${dir.sounds}reload.mp3`            
+        }
+
+        const audio = {
+            play: (name) => { new Audio(audioList[name]).play() }
+        }
+
+        const animation = {
+            play: (name) => { animationList[name]() }
+        }
+        const targetPosition = {
+            changeX: (target, type, x) => {
+                if (type == "random") {
+                    const rand = Math.floor(Math.random() * 9)
+                    target.x = rand * 100
+                    target.css("left", rand*100)
+                    return rand * 100
+                } else {
+                    target.x = x
+                    return x
+                }
+            }
+        }
+        targetPosition.changeX($("#target"), "random")
+        
+        const effects = {
+            dead: (target) => {
+                target.addClass("dead")
+                audio.play("dead")
+                target.toggle("explode", 1600)
+            },
+            alive: (target) => {
+                target.removeClass("dead")
+                target.toggle(0)
+            },
+            completeRespawn: (target) => {
+                effects.dead(target)
+                setTimeout(() => {
+                    targetPosition.changeX(target, "random")
+                    effects.alive(target)
+                }, 4500)
+            }
+
+        }
+
+
+        const controller = {
+            shoot: (target) => {
+                if (overlap.collide(document.getElementById("crosshair"), document.getElementById("target")) == true) {
+
+                    effects.completeRespawn(target)
+                }
+            }
+        }
+
+        const actList = {
+            A: () => {
+                if (state.shooting == false) {
+                    audio.play("shoot")
+                    setTimeout(()=>{
+                        audio.play("reload")
+                    },350)
+                    animation.play("shoot")
+                    controller.shoot($("#target"))
+                }
+            },
+            B: () => { console.log("B") },
+            C: () => { console.log("C") },
+            D: () => { console.log("D") }
+        }
+
+        const acts = (btn) => {
+            btn != "N" ? actList[btn]() : console.log("No one button pressed")
+        }
+        
+        const aim = {
+            style: ()=>{
+                if (overlap.collide(document.getElementById("crosshair"), document.getElementById("target")) == true) {
+                    $("#crosshair").addClass("aim")
+                }else{
+                    $("#crosshair").hasClass("aim") ? $("#crosshair").removeClass("aim") : console.log("...")
+                }
+            }
+        }
+        socket.on("move", data => {
+            const crosshair = $('.crosshair')
+
+            crosshair.animate({ top: `+=${((data.y - 336) / speed) * -1}px`, left: `+=${(data.x - 341) / speed}px`, }, 100, "linear")
+            if (crosshair.position().left > 650) {
+                $('.player').addClass("flip")
+            } else {
+                $('.player').hasClass("flip") ? $('.player').removeClass("flip") : console.log("")
+            }
+            aim.style()
+
+            acts(data.btn)
+        })
+
+    })
+</script>
+
+<body>
+    <img src="images/logo.png" style="position:absolute;left:32vw;top:30px;" alt="">
+    <div class="crosshair" id="crosshair"></div>
+    <div class="player"><img src="images/player/1.gif"></div>
+    <div class="targets">
+        <img src="images/target.png" id="target" width=90 class="target">
+    </div>
+</body>
+
+</html>

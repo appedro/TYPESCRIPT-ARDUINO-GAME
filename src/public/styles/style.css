@@ -1,0 +1,45 @@
+body{
+    justify-content: center;
+    align-items: center;
+    display: grid;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    background: url('https://actiontarget.com/wp-content/uploads/2015/09/bcd-gun-room.jpg');
+    background-size: cover;
+}
+.crosshair{
+    background: url('images/crosshair.svg');
+    width: 50px;
+    height: 50px;
+    top:500%;
+    position: relative;
+    filter: invert(29%) sepia(43%) saturate(2476%) hue-rotate(89deg) brightness(118%) contrast(119%)
+}
+.player{
+    position:fixed;
+    left:25vw;
+    top:30vh;
+    z-index:99999;
+}
+.aim{
+    filter: invert(29%) sepia(74%) saturate(2476%) hue-rotate(17deg) brightness(118%) contrast(119%)
+}
+
+.flip{
+    transform: scaleX(-1);
+}
+.targets{
+    position: relative;
+    top:200px;
+    left:-402px;
+    z-index:-1;
+}
+.target{
+    position:relative;    
+    transition: filter 1s;
+    z-index:-9999;
+}
+.dead{
+    filter: invert(3%) sepia(74%) saturate(2476%) hue-rotate(17deg) brightness(118%) contrast(119%)
+}
